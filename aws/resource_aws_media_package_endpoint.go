@@ -51,17 +51,20 @@ func resourceAwsMediaPackageEndpoint() *schema.Resource {
 				Optional: true,
 				Default:  "Managed by Terraform",
 			},
-			"id": { // Id
+			"endpoint_id": { // Id
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 			"manifest_name": { // ManifestName
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Default:  "index",
 			},
 			"origination": {
 				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "ALLOW",
 				ValidateFunc: validation.StringInSlice([]string{"ALLOW", "DENY"}, false),
 			},
 			"startover_window_seconds": { // StartoverWindowSeconds
@@ -74,10 +77,12 @@ func resourceAwsMediaPackageEndpoint() *schema.Resource {
 				Optional: true,
 			},
 			"url": { // Url
-				Type: schema.TypeString,
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"whitelist": { // Whitelist
-				Type: schema.TypeList,
+				Type:     schema.TypeList,
+				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -93,8 +98,9 @@ func resourceAwsMediaPackageEndpoint() *schema.Resource {
 			},
 			"encryption": { // ALL
 				// Whether the stream should be encrypted
-				Type:    schema.TypeBool,
-				Default: false,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 
 			// A Common Media Application Format (CMAF) packaging configuration.
@@ -225,6 +231,7 @@ func resourceAwsMediaPackageEndpoint() *schema.Resource {
 							// "SCTE35_ENHANCED" generates ad markers and blackout tags based on SCTE-35messages
 							// in the input source.
 							Type:         schema.TypeString,
+							Optional:     true,
 							Default:      "NONE",
 							ValidateFunc: validation.StringInSlice([]string{"NONE", "PASSTHROUGH", "SCTE35_ENHANCED"}, false),
 						},
@@ -256,8 +263,9 @@ func resourceAwsMediaPackageEndpoint() *schema.Resource {
 						},
 						"playlist_window_seconds": {
 							// Time window (in seconds) contained in each parent manifest.
-							Type:    schema.TypeInt,
-							Default: 60,
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  60,
 						},
 						"program_date_time_interval_seconds": {
 							// The interval (in seconds) between each EXT-X-PROGRAM-DATE-TIME taginserted
@@ -540,8 +548,8 @@ func resourceAwsMediaPackageEndpointCreate(d *schema.ResourceData, meta interfac
 		ManifestName:           aws.String(d.Get("manifest_name").(string)),
 		MssPackage:             buildMssPackage(d),
 		Origination:            aws.String(d.Get("origination").(string)),
-		StartoverWindowSeconds: aws.Int64(d.Get("startover_window_seconds").(int64)),
-		TimeDelaySeconds:       aws.Int64(d.Get("time_delay_seconds").(int64)),
+		StartoverWindowSeconds: aws.Int64(int64(d.Get("startover_window_seconds").(int))),
+		TimeDelaySeconds:       aws.Int64(int64(d.Get("time_delay_seconds").(int))),
 		Whitelist:              aws.StringSlice(d.Get("whitelist").([]string)),
 	}
 
@@ -658,8 +666,8 @@ func resourceAwsMediaPackageEndpointUpdate(d *schema.ResourceData, meta interfac
 		ManifestName:           aws.String(d.Get("manifest_name").(string)),
 		MssPackage:             buildMssPackage(d),
 		Origination:            aws.String(d.Get("origination").(string)),
-		StartoverWindowSeconds: aws.Int64(d.Get("startover_window_seconds").(int64)),
-		TimeDelaySeconds:       aws.Int64(d.Get("time_delay_seconds").(int64)),
+		StartoverWindowSeconds: aws.Int64(int64(d.Get("startover_window_seconds").(int))),
+		TimeDelaySeconds:       aws.Int64(int64(d.Get("time_delay_seconds").(int))),
 		Whitelist:              aws.StringSlice(d.Get("whitelist").([]string)),
 	}
 
@@ -731,7 +739,7 @@ func resourceAwsMediaPackageEndpointDelete(d *schema.ResourceData, meta interfac
 // }
 func buildCmafPackage(d *schema.ResourceData) *mediapackage.CmafPackageCreateOrUpdateParameters {
 	var pack = &mediapackage.CmafPackageCreateOrUpdateParameters{
-		SegmentDurationSeconds: aws.Int64(d.Get("segment_duration_seconds").(int64)),
+		SegmentDurationSeconds: aws.Int64(int64(d.Get("segment_duration_seconds").(int))),
 		SegmentPrefix:          aws.String(d.Get("segment_prefix").(string)),
 
 		Encryption:      buildCmafEncryption(d),
@@ -762,14 +770,14 @@ func buildDashPackage(d *schema.ResourceData) *mediapackage.DashPackage {
 		AdTriggers:                        aws.StringSlice(d.Get("ad_triggers").([]string)),
 		AdsOnDeliveryRestrictions:         aws.String(d.Get("ads_on_delivery_restrictions").(string)),
 		ManifestLayout:                    aws.String(d.Get("manifest_layout").(string)),
-		ManifestWindowSeconds:             aws.Int64(d.Get("manifest_window_seconds").(int64)),
-		MinBufferTimeSeconds:              aws.Int64(d.Get("min_buffer_time_seconds").(int64)),
-		MinUpdatePeriodSeconds:            aws.Int64(d.Get("min_update_period_seconds").(int64)),
+		ManifestWindowSeconds:             aws.Int64(int64(d.Get("manifest_window_seconds").(int))),
+		MinBufferTimeSeconds:              aws.Int64(int64(d.Get("min_buffer_time_seconds").(int))),
+		MinUpdatePeriodSeconds:            aws.Int64(int64(d.Get("min_update_period_seconds").(int))),
 		PeriodTriggers:                    aws.StringSlice(d.Get("period_triggers").([]string)),
 		Profile:                           aws.String(d.Get("profile").(string)),
-		SegmentDurationSeconds:            aws.Int64(d.Get("segment_duration_seconds").(int64)),
+		SegmentDurationSeconds:            aws.Int64(int64(d.Get("segment_duration_seconds").(int))),
 		SegmentTemplateFormat:             aws.String(d.Get("segment_template_format").(string)),
-		SuggestedPresentationDelaySeconds: aws.Int64(d.Get("suggested_presentation_delay_seconds").(int64)),
+		SuggestedPresentationDelaySeconds: aws.Int64(int64(d.Get("suggested_presentation_delay_seconds").(int))),
 
 		Encryption:      buildDashEncryption(d),
 		StreamSelection: buildStreamSelection(d),
@@ -798,9 +806,9 @@ func buildHlsPackage(d *schema.ResourceData) *mediapackage.HlsPackage {
 		AdsOnDeliveryRestrictions:      aws.String(d.Get("ads_on_delivery_restrictions").(string)),
 		IncludeIframeOnlyStream:        aws.Bool(d.Get("include_iframe_only_stream").(bool)),
 		PlaylistType:                   aws.String(d.Get("playlist_type").(string)),
-		PlaylistWindowSeconds:          aws.Int64(d.Get("playlist_window_seconds").(int64)),
-		ProgramDateTimeIntervalSeconds: aws.Int64(d.Get("program_date_time_interval_seconds").(int64)),
-		SegmentDurationSeconds:         aws.Int64(d.Get("segment_duration_seconds").(int64)),
+		PlaylistWindowSeconds:          aws.Int64(int64(d.Get("playlist_window_seconds").(int))),
+		ProgramDateTimeIntervalSeconds: aws.Int64(int64(d.Get("program_date_time_interval_seconds").(int))),
+		SegmentDurationSeconds:         aws.Int64(int64(d.Get("segment_duration_seconds").(int))),
 		UseAudioRenditionGroup:         aws.Bool(d.Get("use_audio_rendition_group").(bool)),
 
 		Encryption:      buildHlsEncryption(d),
@@ -818,8 +826,8 @@ func buildHlsPackage(d *schema.ResourceData) *mediapackage.HlsPackage {
 // }
 func buildMssPackage(d *schema.ResourceData) *mediapackage.MssPackage {
 	var pack = &mediapackage.MssPackage{
-		ManifestWindowSeconds:  aws.Int64(d.Get("manifest_window_seconds").(int64)),
-		SegmentDurationSeconds: aws.Int64(d.Get("segment_duration_seconds").(int64)),
+		ManifestWindowSeconds:  aws.Int64(int64(d.Get("manifest_window_seconds").(int))),
+		SegmentDurationSeconds: aws.Int64(int64(d.Get("segment_duration_seconds").(int))),
 
 		Encryption:      buildMssEncryption(d),
 		StreamSelection: buildStreamSelection(d),
@@ -836,7 +844,7 @@ func buildMssPackage(d *schema.ResourceData) *mediapackage.MssPackage {
 // }
 func buildCmafEncryption(d *schema.ResourceData) *mediapackage.CmafEncryption {
 	var encryption = &mediapackage.CmafEncryption{
-		KeyRotationIntervalSeconds: aws.Int64(d.Get("key_rotation_interval_seconds").(int64)),
+		KeyRotationIntervalSeconds: aws.Int64(int64(d.Get("key_rotation_interval_seconds").(int))),
 		SpekeKeyProvider:           buildSpekeKeyProvider(d),
 	}
 	return encryption
@@ -844,7 +852,7 @@ func buildCmafEncryption(d *schema.ResourceData) *mediapackage.CmafEncryption {
 
 func buildDashEncryption(d *schema.ResourceData) *mediapackage.DashEncryption {
 	var encryption = &mediapackage.DashEncryption{
-		KeyRotationIntervalSeconds: aws.Int64(d.Get("key_rotation_interval_seconds").(int64)),
+		KeyRotationIntervalSeconds: aws.Int64(int64(d.Get("key_rotation_interval_seconds").(int))),
 		SpekeKeyProvider:           buildSpekeKeyProvider(d),
 	}
 	return encryption
@@ -854,7 +862,7 @@ func buildHlsEncryption(d *schema.ResourceData) *mediapackage.HlsEncryption {
 	var encryption = &mediapackage.HlsEncryption{
 		ConstantInitializationVector: aws.String(d.Get("constant_initialization_vector").(string)),
 		EncryptionMethod:             aws.String(d.Get("encryption_method").(string)),
-		KeyRotationIntervalSeconds:   aws.Int64(d.Get("key_rotation_interval_seconds").(int64)),
+		KeyRotationIntervalSeconds:   aws.Int64(int64(d.Get("key_rotation_interval_seconds").(int))),
 		RepeatExtXKey:                aws.Bool(d.Get("repeat_ext_x_key").(bool)),
 		SpekeKeyProvider:             buildSpekeKeyProvider(d),
 	}
@@ -876,7 +884,7 @@ func buildMssEncryption(d *schema.ResourceData) *mediapackage.MssEncryption {
 //   Url *string `locationName:"url" type:"string" required:"true"`
 // }
 func buildSpekeKeyProvider(d *schema.ResourceData) *mediapackage.SpekeKeyProvider {
-	var providerMap = d.Get("speke_key_provider").([]map[string]interface{})[0]
+	var providerMap = (d.Get("speke_key_provider").([]interface{})[0].(map[string]interface{}))
 	var provider = &mediapackage.SpekeKeyProvider{
 		CertificateArn: aws.String(providerMap["certificate_arn"].(string)),
 		ResourceId:     aws.String(providerMap["resource_id"].(string)),
@@ -900,11 +908,11 @@ type HlsManifestCreateOrUpdateParameters struct {
 }
 
 func buildHlsManifestList(d *schema.ResourceData) []*mediapackage.HlsManifestCreateOrUpdateParameters {
-	var manifestList = d.Get("hls_manifests").([]map[string]interface{})
+	var manifestList = d.Get("hls_manifests").([]interface{})
 
 	var hlsManifests []*mediapackage.HlsManifestCreateOrUpdateParameters
 	for _, m := range manifestList {
-		manifest := buildHlsManifest(m)
+		manifest := buildHlsManifest(m.(map[string]interface{}))
 
 		hlsManifests = append(hlsManifests, manifest)
 	}
@@ -932,8 +940,8 @@ func buildHlsManifest(m map[string]interface{}) *mediapackage.HlsManifestCreateO
 		IncludeIframeOnlyStream:        aws.Bool(m["include_iframe_only_stream"].(bool)),
 		ManifestName:                   aws.String(m["manifest_name"].(string)),
 		PlaylistType:                   aws.String(m["playlist_type"].(string)),
-		PlaylistWindowSeconds:          aws.Int64(m["playlist_window_seconds"].(int64)),
-		ProgramDateTimeIntervalSeconds: aws.Int64(m["program_date_time_interval_seconds"].(int64)),
+		PlaylistWindowSeconds:          aws.Int64(int64(m["playlist_window_seconds"].(int))),
+		ProgramDateTimeIntervalSeconds: aws.Int64(int64(m["program_date_time_interval_seconds"].(int))),
 	}
 	return manifest
 }
@@ -945,8 +953,8 @@ func buildHlsManifest(m map[string]interface{}) *mediapackage.HlsManifestCreateO
 // }
 func buildStreamSelection(d *schema.ResourceData) *mediapackage.StreamSelection {
 	var selection = &mediapackage.StreamSelection{
-		MaxVideoBitsPerSecond: aws.Int64(d.Get("max_video_bits_per_second").(int64)),
-		MinVideoBitsPerSecond: aws.Int64(d.Get("min_video_bits_per_second").(int64)),
+		MaxVideoBitsPerSecond: aws.Int64(int64(d.Get("max_video_bits_per_second").(int))),
+		MinVideoBitsPerSecond: aws.Int64(int64(d.Get("min_video_bits_per_second").(int))),
 		StreamOrder:           aws.String(d.Get("stream_order").(string)),
 	}
 	return selection
@@ -1004,8 +1012,8 @@ func buildStreamSelection(d *schema.ResourceData) *mediapackage.StreamSelection 
 // 	obj.SetManifestName(aws.String(d.Get("manifest_name").(string)))
 // 	obj.SetMssPackage(buildMssPackage(d))
 // 	obj.SetOrigination(aws.String(d.Get("origination").(string)))
-// 	obj.SetStartoverWindowSeconds(aws.Int64(d.Get("startover_window_seconds").(int64)))
-// 	obj.SetTimeDelaySeconds(aws.Int64(d.Get("time_delay_seconds").(int64)))
+// 	obj.SetStartoverWindowSeconds(aws.Int64(d.Get("startover_window_seconds").(int))))
+// 	obj.SetTimeDelaySeconds(aws.Int64(d.Get("time_delay_seconds").(int))))
 // 	obj.SetUrl(aws.String(d.Get("url").(string)))
 // 	obj.SetWhitelist(aws.StringSlice(d.Get("whitelist").([]string)))
 
@@ -1018,7 +1026,7 @@ func extractMediaPackageEndpointValues(d *schema.ResourceData, resp *mediapackag
 	d.Set("arn", resp.Arn)
 	d.Set("channel_id", resp.ChannelId)
 	d.Set("description", resp.Description)
-	d.Set("id", resp.Id)
+	d.Set("endpoint_id", resp.Id)
 	d.Set("manifest_name", resp.ManifestName)
 	d.Set("origination", resp.Origination)
 	d.Set("startover_window_seconds", resp.StartoverWindowSeconds)
